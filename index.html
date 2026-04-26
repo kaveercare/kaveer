@@ -2283,24 +2283,6 @@ function filtStu(q,code){
 // ── FIX 11: Edit button on tcVidCard ───────────────────
 
 // function: tcVidCard
-function saveBrevo(){
-  BREVO_API_KEY=sanR((document.getElementById('brevo-k')||{value:''}).value).trim();
-  BREVO_FROM=sanR((document.getElementById('brevo-f')||{value:''}).value).trim();
-  BREVO_NAME=sanR((document.getElementById('brevo-n')||{value:''}).value).trim()||'KAVEER';
-  var gcid=sanR((document.getElementById('google-cid')||{value:''}).value).trim();
-  saveLS('brevo_key',BREVO_API_KEY);
-  saveLS('brevo_from',BREVO_FROM);
-  saveLS('brevo_name',BREVO_NAME);
-  if(gcid){saveLS('google_client_id',gcid);ST.settings.googleClientId=gcid;initGoogleSignIn(gcid);}
-  toast('Settings saved!');
-}
-
-// function: admSet
-
-
-// ── tcSequence with rename ──────────────────────────────
-
-// function: tcSequence
 function tcSequence(){
   var courses=[];allVids().forEach(function(v){var c=v.course||v.topic;if(courses.indexOf(c)<0)courses.push(c);});
   var html='<div style="margin-bottom:16px"><h2 style="font-family:var(--fd)">Video Sequence</h2><p style="color:var(--mu);margin-top:3px">Set the order students see videos. You can also rename courses here.</p></div>';
@@ -2568,29 +2550,6 @@ function sendFirebaseOTP(email, otp) {
 }
 
 // ── Admin Firebase Setup ──────────────────────────────────────
-function saveFirebaseConfig() {
-  var apiKey    = sanR((document.getElementById('fb-apikey')   || {value:''}).value).trim();
-  var authDomain= sanR((document.getElementById('fb-authdomain')|| {value:''}).value).trim();
-  var projectId = sanR((document.getElementById('fb-projectid') || {value:''}).value).trim();
-  var appId     = sanR((document.getElementById('fb-appid')     || {value:''}).value).trim();
-
-  if (!apiKey || !authDomain || !projectId) {
-    toast('Fill API Key, Auth Domain and Project ID at minimum', 'err');
-    return;
-  }
-  FB_CONFIG = { apiKey, authDomain, projectId, appId };
-  saveLS('fb_config', FB_CONFIG);
-
-  // Re-init Firebase
-  fbApp = null; fbAuth = null;
-  if (initFirebase()) {
-    toast('Firebase configured! Google Sign-In is now active.');
-  } else {
-    toast('Saved — reload page to activate.', 'inf');
-  }
-}
-
-// ── Updated admSet to show Firebase section ───────────────────
 function renderHome(){
   var u=ST.user;
   var pts=Object.values(ST.scores).reduce(function(a,s){return a+s;},0);
@@ -3873,11 +3832,6 @@ function renderFieldConfig(){
     +'<p style="font-size:12px;color:var(--mu);margin-top:10px">Name, email, and roll_no imported by teacher are always locked regardless of these settings.</p>'
   +'</div>';
 }
-function toggleFieldRequired(k,btn){
-  if(FIELD_CONFIG[k]){ FIELD_CONFIG[k].required=!FIELD_CONFIG[k].required; btn.classList.toggle('on'); saveFieldConfig(); toast('Saved!'); }
-}
-
-// ── 14. FIXED admSet with video suggestions tab + field config ─
 function showAdmSec(sec, btn){
   document.querySelectorAll('#s-admin .si').forEach(function(s){ s.classList.remove('on'); });
   if(btn) btn.classList.add('on');
@@ -4078,17 +4032,6 @@ function addVideo(){
 var SHARE_MESSAGE = loadLS('share_message',
   'Join KAVEER — free interactive learning with quizzes for every student! Learn, grow, excel. Open: ');
 // (URL appended automatically)
-
-function saveShareMessage(){
-  var el = document.getElementById('share-msg-input');
-  if(!el) return;
-  var msg = el.value.trim();
-  if(!msg){ toast('Message cannot be empty','err'); return; }
-  if(msg.length > 200){ toast('Keep message under 200 characters (Twitter limit)','err'); return; }
-  SHARE_MESSAGE = msg;
-  saveLS('share_message', SHARE_MESSAGE);
-  toast('Share message saved!');
-}
 
 function shareKaveer(platform, courseId){
   var url  = window.location.href.split('?')[0];
@@ -4339,28 +4282,170 @@ window.onYouTubeIframeAPIReady = function(){
 
 
 // ── Data export/import (Admin) ───────────────────────────────
+function admSet(){
+  var cfg = (typeof FB_CONFIG !== 'undefined') ? FB_CONFIG : {};
+  var brevoKey  = (typeof BREVO_API_KEY  !== 'undefined') ? BREVO_API_KEY  : '';
+  var brevoFrom = (typeof BREVO_FROM     !== 'undefined') ? BREVO_FROM     : '';
+  var brevoName = (typeof BREVO_NAME     !== 'undefined') ? BREVO_NAME     : 'KAVEER';
+  var shareMsg  = (typeof SHARE_MESSAGE  !== 'undefined') ? SHARE_MESSAGE  : '';
+  var ps        = (ST && ST.settings)    ? ST.settings    : {yt:'',li:''};
+
+  return '<div style="margin-bottom:16px"><h2 style="font-family:var(--fd)">Platform Settings</h2></div>'
+
+  // ── Firebase ──
+  +'<div class="box"><div class="boxt">🔥 Firebase — Google Sign-In</div>'
+    +'<p style="font-size:13px;color:var(--mu);margin-bottom:14px">'
+      +'Get config from <a href="https://console.firebase.google.com" target="_blank" style="color:var(--tl)">console.firebase.google.com</a> → Project Settings → Your Apps → firebaseConfig'
+    +'</p>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">'
+      +'<div><label class="fl">API Key *</label><input class="fi" id="fb-apikey"      value="'+san(cfg.apiKey     ||'')+'" placeholder="AIzaSy..."/></div>'
+      +'<div><label class="fl">Auth Domain *</label><input class="fi" id="fb-authdomain" value="'+san(cfg.authDomain||'')+'" placeholder="yourapp.firebaseapp.com"/></div>'
+      +'<div><label class="fl">Project ID *</label><input class="fi" id="fb-projectid"  value="'+san(cfg.projectId ||'')+'" placeholder="your-project-id"/></div>'
+      +'<div><label class="fl">App ID</label><input class="fi" id="fb-appid"         value="'+san(cfg.appId      ||'')+'" placeholder="1:123:web:abc"/></div>'
+    +'</div>'
+    +'<button class="btn btn-t" onclick="saveFirebaseConfig()">Save Firebase Config</button>'
+    +(cfg.apiKey
+      ?'<span class="badge bt" style="margin-left:10px">✓ Configured</span>'
+      :'<span class="badge br" style="margin-left:10px">Not set up</span>')
+    +'<div class="info-box" style="margin-top:12px">'
+      +'<strong>Steps:</strong> '
+      +'1) <a href="https://console.firebase.google.com" target="_blank" style="color:var(--tl)">Create Firebase project</a> → '
+      +'2) Authentication → Sign-in methods → Google → Enable → '
+      +'3) Authentication → Settings → Authorised domains → Add your site URL → '
+      +'4) Project Settings → Your apps → copy 4 values above → Save'
+    +'</div>'
+  +'</div>'
+
+  // ── Brevo OTP ──
+  +'<div class="box"><div class="boxt">📧 Email OTP via Brevo</div>'
+    +'<p style="font-size:13px;color:var(--mu);margin-bottom:12px">'
+      +'Free 300 emails/day. <a href="https://app.brevo.com" target="_blank" style="color:var(--tl)">Get API key at brevo.com</a>'
+    +'</p>'
+    +'<div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-bottom:10px">'
+      +'<div><label class="fl">Brevo API Key</label>'
+        +'<input class="fi" id="brevo-k" value="'+san(brevoKey)+'" placeholder="xkeysib-..."/>'
+      +'</div>'
+      +'<button class="btn btn-t" onclick="saveBrevo()" style="margin-top:18px">Save</button>'
+    +'</div>'
+    +'<div class="fg"><label class="fl">Sender Email (verified in Brevo)</label>'
+      +'<input class="fi" id="brevo-f" value="'+san(brevoFrom)+'" placeholder="noreply@yourdomain.com"/>'
+    +'</div>'
+    +'<div class="fg"><label class="fl">Sender Name</label>'
+      +'<input class="fi" id="brevo-n" value="'+san(brevoName)+'" placeholder="KAVEER"/>'
+    +'</div>'
+    +(brevoKey
+      ?'<span class="badge bt">✓ Brevo configured</span>'
+      :'<span class="badge br">Not configured — OTP only shown on screen</span>')
+  +'</div>'
+
+  // ── Social Links ──
+  +'<div class="box"><div class="boxt">📺 Social Links</div>'
+    +'<div class="fg"><label class="fl">YouTube Channel URL</label>'
+      +'<div style="display:flex;gap:9px">'
+        +'<input class="fi" id="yt-i" value="'+san(ps.yt||'')+'" placeholder="https://youtube.com/@YourChannel"/>'
+        +'<button class="btn btn-t btn-sm" onclick="ST.settings.yt=document.getElementById(\'yt-i\').value;saveLS(\'settings\',ST.settings);toast(\'Saved!\')">Save</button>'
+      +'</div>'
+    +'</div>'
+    +'<div class="fg"><label class="fl">LinkedIn Profile/Page URL</label>'
+      +'<div style="display:flex;gap:9px">'
+        +'<input class="fi" id="li-i" value="'+san(ps.li||'')+'" placeholder="https://linkedin.com/in/yourname"/>'
+        +'<button class="btn btn-t btn-sm" onclick="ST.settings.li=document.getElementById(\'li-i\').value;saveLS(\'settings\',ST.settings);toast(\'Saved!\')">Save</button>'
+      +'</div>'
+    +'</div>'
+  +'</div>'
+
+  // ── Share Message ──
+  +'<div class="box"><div class="boxt">📣 Share Message</div>'
+    +'<p style="font-size:13px;color:var(--mu);margin-bottom:8px">Sent when anyone clicks a share button. Keep under 200 chars (Twitter limit). URL added automatically.</p>'
+    +'<div id="share-char-count" style="font-size:11px;color:var(--mu);text-align:right;margin-bottom:5px">'+shareMsg.length+' / 200</div>'
+    +'<textarea class="fi" id="share-msg-input" rows="2" maxlength="200" oninput="document.getElementById(\'share-char-count\').textContent=this.value.length+\' / 200\'" style="margin-bottom:10px">'+san(shareMsg)+'</textarea>'
+    +'<button class="btn btn-t btn-sm" onclick="saveShareMessage()">Save Message</button>'
+  +'</div>'
+
+  // ── Profile Field Settings ──
+  +'<div class="box"><div class="boxt">📋 Profile Field Settings</div>'
+    +'<p style="font-size:13px;color:var(--mu);margin-bottom:14px">Which fields students must fill after watching 2 videos.</p>'
+    +(typeof FIELD_CONFIG !== 'undefined'
+      ?'<div class="tw"><table><thead><tr><th>Field</th><th>Required?</th><th>Locks after set?</th></tr></thead><tbody>'
+        +Object.keys(FIELD_CONFIG).map(function(k){
+          var f=FIELD_CONFIG[k];
+          return '<tr><td><strong>'+f.label+'</strong></td>'
+            +'<td><button class="tog '+(f.required?'on':'')+'" onclick="toggleFieldRequired(\''+k+'\',this)"></button></td>'
+            +'<td>'+(f.lockAfter?'<span class="badge bt" style="font-size:10px">🔒 Locks</span>':'<span class="badge bp" style="font-size:10px">Editable</span>')+'</td>'
+          +'</tr>';
+        }).join('')
+      +'</tbody></table></div>'
+      :'<p style="color:var(--mu)">Field config loading...</p>')
+  +'</div>'
+
+  // ── Data Backup ──
+  +'<div class="box"><div class="boxt">💾 Data Backup</div>'
+    +'<p style="font-size:13px;color:var(--mu);margin-bottom:12px">Export all settings and data before updating the site. Import to restore if needed.</p>'
+    +'<div style="display:flex;gap:9px;flex-wrap:wrap">'
+      +'<button class="btn btn-t btn-sm" onclick="exportAllData()">📥 Export Backup JSON</button>'
+      +'<button class="btn btn-g btn-sm" onclick="importAllData()">📤 Import Backup JSON</button>'
+    +'</div>'
+    +'<div class="info-box" style="margin-top:12px">All data (Firebase, Brevo, students, progress) lives in browser localStorage and survives site updates automatically. Export monthly as extra safety.</div>'
+    +'<button class="btn btn-xs" style="background:rgba(232,76,43,.1);color:var(--ac);border:1px solid rgba(232,76,43,.2);margin-top:10px" onclick="clearAllData()">⚠ Clear All Data</button>'
+  +'</div>';
+}
+
+// ── saveBrevo helper (may be missing too) ──
+function saveBrevo(){
+  BREVO_API_KEY = sanR((document.getElementById('brevo-k')||{value:''}).value).trim();
+  BREVO_FROM    = sanR((document.getElementById('brevo-f')||{value:''}).value).trim();
+  BREVO_NAME    = sanR((document.getElementById('brevo-n')||{value:''}).value).trim() || 'KAVEER';
+  saveLS('brevo_key',  BREVO_API_KEY);
+  saveLS('brevo_from', BREVO_FROM);
+  saveLS('brevo_name', BREVO_NAME);
+  toast('Email settings saved! Students will receive real OTPs.');
+}
+
+// ── saveShareMessage helper ──
+function saveShareMessage(){
+  var el=document.getElementById('share-msg-input');
+  if(!el)return;
+  var msg=el.value.trim();
+  if(!msg){toast('Message cannot be empty','err');return;}
+  SHARE_MESSAGE=msg;
+  saveLS('share_message',SHARE_MESSAGE);
+  toast('Share message saved!');
+}
+
+// ── toggleFieldRequired helper ──
+function toggleFieldRequired(k,btn){
+  if(typeof FIELD_CONFIG!=='undefined'&&FIELD_CONFIG[k]){
+    FIELD_CONFIG[k].required=!FIELD_CONFIG[k].required;
+    if(btn)btn.classList.toggle('on');
+    saveFieldConfig();
+    toast('Saved!');
+  }
+}
+
+// ── exportAllData ──
 function exportAllData(){
   var data={};
   for(var i=0;i<localStorage.length;i++){
     var k=localStorage.key(i);
-    if(k&&k.startsWith('kv_')) data[k]=localStorage.getItem(k);
+    if(k&&k.startsWith('kv_'))data[k]=localStorage.getItem(k);
   }
-  var json=JSON.stringify(data,null,2);
-  var blob=new Blob([json],{type:'application/json'});
+  var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   var url=URL.createObjectURL(blob);
-  var a=document.createElement('a'); a.href=url;
+  var a=document.createElement('a');a.href=url;
   a.download='KAVEER_backup_'+new Date().toISOString().slice(0,10)+'.json';
-  a.click(); setTimeout(function(){URL.revokeObjectURL(url);},1000);
-  toast('Data exported! Save this file as your backup.');
+  a.click();setTimeout(function(){URL.revokeObjectURL(url);},1000);
+  toast('Backup exported! Save this file safely.');
 }
+
+// ── importAllData ──
 function importAllData(){
-  var inp=document.createElement('input'); inp.type='file'; inp.accept='.json';
+  var inp=document.createElement('input');inp.type='file';inp.accept='.json';
   inp.onchange=function(){
-    var f=inp.files[0]; if(!f) return;
+    var f=inp.files[0];if(!f)return;
     var r=new FileReader();
     r.onload=function(e){
       try{
-        var data=JSON.parse(e.target.result); var count=0;
+        var data=JSON.parse(e.target.result);var count=0;
         Object.keys(data).forEach(function(k){
           if(k.startsWith('kv_')){localStorage.setItem(k,data[k]);count++;}
         });
@@ -4371,6 +4456,28 @@ function importAllData(){
     r.readAsText(f);
   };
   inp.click();
+}
+
+// ── clearAllData ──
+function clearAllData(){
+  if(!confirm('Clear ALL data? Cannot be undone.'))return;
+  localStorage.clear();
+  toast('Cleared! Reloading...');
+  setTimeout(function(){window.location.reload();},1000);
+}
+
+// ── saveFirebaseConfig (may be missing) ──
+function saveFirebaseConfig(){
+  var apiKey     = sanR((document.getElementById('fb-apikey')     ||{value:''}).value).trim();
+  var authDomain = sanR((document.getElementById('fb-authdomain') ||{value:''}).value).trim();
+  var projectId  = sanR((document.getElementById('fb-projectid')  ||{value:''}).value).trim();
+  var appId      = sanR((document.getElementById('fb-appid')      ||{value:''}).value).trim();
+  if(!apiKey||!authDomain||!projectId){toast('API Key, Auth Domain and Project ID are required','err');return;}
+  FB_CONFIG={apiKey:apiKey,authDomain:authDomain,projectId:projectId,appId:appId};
+  saveLS('fb_config',FB_CONFIG);
+  fbApp=null;fbAuth=null;
+  if(initFirebase()){toast('Firebase configured! Google Sign-In is now active.');}
+  else{toast('Saved — reload page to activate.','inf');}
 }
 
 </script>
